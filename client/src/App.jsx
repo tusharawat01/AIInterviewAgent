@@ -10,6 +10,7 @@ import InterviewPage from "./pages/InterviewPage";
 import InterviewHistory from "./pages/InterviewHistory";
 import Pricing from "./pages/Pricing";
 import InterviewReport from "./pages/InterviewReport";
+import AtsChecker from "./pages/AtsChecker";
 
 export const ServerUrl = import.meta.env.VITE_BACKEND_URL;
 
@@ -37,6 +38,7 @@ function App() {
       <Route path="/history" element={<InterviewHistory />} />
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/report/:id" element={<InterviewReport />} />
+      <Route path="/ats" element={<AtsChecker />} />
     </Routes>
   );
 }

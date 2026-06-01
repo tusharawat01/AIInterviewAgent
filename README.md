@@ -1,160 +1,265 @@
-# Services Used in AI Interview Agent
+# AI Interview Agent
 
-## External Services & APIs
+An AI-powered mock interview platform that lets users practice real job interviews with voice interaction, AI-generated questions, answer evaluation, ATS resume scoring, and detailed performance reports.
+
+---
+
+## Features
+
+- **Voice-based interviews** — AI reads questions aloud and listens to your spoken answers
+- **Resume-based questions** — Upload your PDF resume and get questions tailored to your actual skills and projects
+- **AI answer evaluation** — Every answer is scored on Confidence, Communication, and Correctness
+- **ATS Score Checker** — Check how well your resume matches a job description (0–100 score)
+- **Performance reports** — Downloadable PDF reports with score charts and per-question feedback
+- **Credit system** — Free tier + paid packs via Razorpay
+- **Interview history** — Track progress across all past sessions
+- **Multiple interview modes** — Technical, HR, System Design
+
+---
+
+## Tech Stack
+
+### Frontend
+| Package | Purpose |
+|---|---|
+| React ^19.2.0 | UI framework |
+| React Router DOM ^7.13.0 | Client-side routing |
+| Redux Toolkit ^2.11.2 | Global state management |
+| Axios ^1.13.5 | HTTP client |
+| Motion ^12.34.1 | Animations |
+| Tailwind CSS ^4.1.18 | Utility-first styling |
+| Recharts ^3.7.0 | Score trend charts |
+| jsPDF + jspdf-autotable | PDF report export |
+| react-circular-progressbar | Circular score display |
+| Firebase ^12.9.0 | Google OAuth authentication |
+| Vite ^7.3.1 | Build tool & dev server |
+
+### Backend
+| Package | Purpose |
+|---|---|
+| Express ^5.2.1 | REST API framework |
+| Mongoose ^9.2.1 | MongoDB ODM |
+| jsonwebtoken ^9.0.3 | JWT session management |
+| pdf-parse ^1.1.1 | Resume PDF text extraction |
+| multer ^2.0.2 | File upload handling |
+| Razorpay ^2.9.6 | Payment processing |
+| dotenv ^17.3.1 | Environment variables |
+| nodemon ^3.1.11 | Dev auto-reload |
+
+---
+
+## External Services
 
 ### 1. Firebase (Google)
-**Purpose:** User authentication via Google Sign-In  
-**Details:** OAuth 2.0 Google popup login, session/identity management  
-**Config:** `client/src/utils/firebase.js`, `client/.env`  
-**Package:** `firebase ^12.9.0`
+**Purpose:** Google Sign-In authentication
+**Config:** `client/src/utils/firebase.js`, `client/.env`
 
----
-
-### 2. OpenRouter
-**Purpose:** AI-powered interview question generation and answer evaluation  
-**Details:** Wraps `openai/gpt-4o-mini` to generate contextual questions from resume/role, parse resume text, and score candidate answers with feedback. Each question generation costs 50 credits.  
-**Config:** `server/services/openRouter.service.js`, `server/.env`  
-**Endpoint:** `https://openrouter.ai/api/v1/chat/completions`  
-**Used in:** `server/controllers/interview.controller.js` — `analyzeResume()`, `generateQuestion()`, `submitAnswer()`
-
----
+### 2. OpenRouter (GPT-4o-mini)
+**Purpose:** AI question generation, answer evaluation, ATS resume analysis
+**Endpoint:** `https://openrouter.ai/api/v1/chat/completions`
+**Config:** `server/services/openRouter.service.js`, `server/.env`
 
 ### 3. MongoDB Atlas
-**Purpose:** Primary database — stores all application data  
-**Details:** Stores user profiles (name, email, credits), interview records, question/answer results, and payment transaction history  
-**Config:** `server/config/connectDb.js`, `server/.env`  
-**Cluster:** `cluster0.pjvi9dz.mongodb.net`  
-**Package:** `mongoose ^9.2.1`  
-**Collections:** `User`, `Payment`, `Interview`
-
----
+**Purpose:** Stores users, interviews, payments
+**Collections:** `User`, `Interview`, `Payment`
+**Config:** `server/config/connectDb.js`, `server/.env`
 
 ### 4. Razorpay
-**Purpose:** Payment processing and credit pack purchases  
-**Details:** Creates payment orders, verifies signatures, manages credit-based plans (Free: 100 credits, Starter: ₹100/150 credits, Pro: ₹500/650 credits)  
-**Config:** `server/services/razorpay.service.js`, `server/.env`, `client/.env`  
-**Package:** `razorpay ^2.9.6`  
-**CDN:** `https://checkout.razorpay.com/v1/checkout.js` (loaded in `client/index.html`)  
-**Used in:** `server/controllers/payment.controller.js`, `client/src/pages/Pricing.jsx`
-
----
+**Purpose:** Credit pack payments (Free / Starter ₹100 / Pro ₹500)
+**CDN:** `checkout.razorpay.com/v1/checkout.js` in `client/index.html`
+**Config:** `server/services/razorpay.service.js`, `server/.env`, `client/.env`
 
 ### 5. Web Speech API (Browser Native)
-**Purpose:** Voice interaction during interviews  
-**Details:** Text-to-speech reads questions aloud (`window.speechSynthesis`), speech recognition captures spoken answers (`window.webkitSpeechRecognition`). Supports male/female voice selection with natural pauses at punctuation.  
+**Purpose:** Text-to-speech for reading questions + speech recognition for capturing answers
 **Used in:** `client/src/components/Step2Interview.jsx`
 
 ---
 
-## Backend Libraries & Middleware
+## API Routes
 
-### 6. Express.js
-**Purpose:** Node.js REST API framework  
-**Details:** Routes for `/api/auth`, `/api/user`, `/api/interview`, `/api/payment`; handles CORS, cookie parsing  
-**Package:** `express ^5.2.1`  
-**Entry:** `server/index.js`
+### Auth
+| Method | Route | Description |
+|---|---|---|
+| POST | `/api/auth/google` | Google Sign-In |
+| GET | `/api/auth/logout` | Logout |
 
----
+### User
+| Method | Route | Description |
+|---|---|---|
+| GET | `/api/user/current-user` | Get logged-in user data |
 
-### 7. JSON Web Token (JWT)
-**Purpose:** Session management and route protection  
-**Details:** Issues tokens on login, stored as HTTP-only cookies with 7-day expiry; validated in auth middleware for protected routes  
-**Config:** `server/config/token.js`, `server/.env`  
-**Package:** `jsonwebtoken ^9.0.3`
+### Interview
+| Method | Route | Credits | Description |
+|---|---|---|---|
+| POST | `/api/interview/resume` | — | Parse uploaded resume PDF |
+| POST | `/api/interview/generate-questions` | -50 | Generate 5 AI questions |
+| POST | `/api/interview/submit-answer` | — | Evaluate a spoken answer |
+| POST | `/api/interview/finish` | — | Finalize interview & compute scores |
+| GET | `/api/interview/get-interview` | — | Fetch user's interview history |
+| GET | `/api/interview/report/:id` | — | Get single interview report |
 
----
+### ATS Checker
+| Method | Route | Credits | Description |
+|---|---|---|---|
+| POST | `/api/ats/check` | -25 | ATS score check (resume + job description) |
 
-### 8. Multer
-**Purpose:** Resume PDF file upload handling  
-**Details:** Temporarily stores uploaded resume files on the server before PDF.js processes them  
-**Config:** `server/middlewares/multer.js`  
-**Package:** `multer ^2.0.2`
-
----
-
-### 9. pdf-parse
-**Purpose:** Resume text extraction  
-**Details:** Node.js-native PDF text extractor. Parses uploaded PDF resumes and extracts raw text, which is then sent to OpenRouter for analysis. Replaced `pdfjs-dist` which is browser-only and crashed in Node.js due to missing DOM APIs (`DOMMatrix`, `ImageData`, `Path2D`).  
-**Used in:** `server/controllers/interview.controller.js` — `analyzeResume()`  
-**Package:** `pdf-parse ^1.1.1`
-
----
-
-### 10. Axios
-**Purpose:** HTTP client for both client and server  
-**Details:** Client uses it to call the Express backend; server uses it to call the OpenRouter API  
-**Package:** `axios ^1.13.5`
+### Payment
+| Method | Route | Description |
+|---|---|---|
+| POST | `/api/payment/order` | Create Razorpay order |
+| POST | `/api/payment/verify` | Verify payment & add credits |
 
 ---
 
-## Frontend Libraries
+## Credits System
 
-### 11. Redux Toolkit
-**Purpose:** Global client-side state management  
-**Details:** Manages authenticated user data and credit balance across components  
-**Config:** `client/src/redux/store.js`, `client/src/redux/userSlice.js`  
-**Packages:** `@reduxjs/toolkit ^2.11.2`, `react-redux ^9.2.0`
-
----
-
-### 12. React Router DOM
-**Purpose:** Client-side page routing and navigation  
-**Package:** `react-router-dom ^7.13.0`
+| Action | Credits |
+|---|---|
+| Signup bonus | +100 free |
+| Generate interview questions | -50 |
+| ATS score check | -25 |
+| Starter Pack (₹100) | +150 |
+| Pro Pack (₹500) | +650 |
 
 ---
 
-### 13. Recharts
-**Purpose:** Data visualization in interview reports  
-**Details:** Renders score charts and performance breakdowns after interview completion  
-**Package:** `recharts ^3.7.0`
+## Project Structure
+
+```
+AIInterviewAgent/
+├── client/                         # React frontend (Vite)
+│   ├── src/
+│   │   ├── assets/                 # Images & videos
+│   │   ├── components/
+│   │   │   ├── Navbar.jsx
+│   │   │   ├── Footer.jsx
+│   │   │   ├── AuthModel.jsx
+│   │   │   ├── Step1SetUp.jsx      # Interview setup form
+│   │   │   ├── Step2Interview.jsx  # Active interview screen
+│   │   │   ├── Step3Report.jsx     # Results dashboard
+│   │   │   └── Timer.jsx
+│   │   ├── pages/
+│   │   │   ├── Home.jsx
+│   │   │   ├── Auth.jsx
+│   │   │   ├── InterviewPage.jsx
+│   │   │   ├── InterviewHistory.jsx
+│   │   │   ├── InterviewReport.jsx
+│   │   │   ├── AtsChecker.jsx      # ATS score checker
+│   │   │   └── Pricing.jsx
+│   │   ├── redux/
+│   │   │   ├── store.js
+│   │   │   └── userSlice.js
+│   │   └── utils/
+│   │       └── firebase.js
+│   └── .env
+│
+├── server/                         # Node.js + Express backend
+│   ├── controllers/
+│   │   ├── auth.controller.js
+│   │   ├── user.controller.js
+│   │   ├── interview.controller.js
+│   │   ├── ats.controller.js       # ATS score checker
+│   │   └── payment.controller.js
+│   ├── routes/
+│   │   ├── auth.route.js
+│   │   ├── user.route.js
+│   │   ├── interview.route.js
+│   │   ├── ats.route.js
+│   │   └── payment.route.js
+│   ├── models/
+│   │   ├── user.model.js
+│   │   ├── interview.model.js
+│   │   └── payment.model.js
+│   ├── services/
+│   │   ├── openRouter.service.js
+│   │   └── razorpay.service.js
+│   ├── middlewares/
+│   │   ├── isAuth.js
+│   │   └── multer.js
+│   ├── config/
+│   │   ├── connectDb.js
+│   │   └── token.js
+│   ├── index.js
+│   └── .env
+│
+└── README.md
+```
 
 ---
 
-### 14. jsPDF + jspdf-autotable
-**Purpose:** PDF report generation  
-**Details:** Exports interview results and scores as downloadable PDF documents  
-**Packages:** `jspdf ^4.2.0`, `jspdf-autotable ^5.0.7`
+## Environment Variables
+
+### `server/.env`
+```env
+MONGO_URI=
+JWT_SECRET=
+OPENROUTER_API_KEY=
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+CLIENT_URL=http://localhost:5173
+PORT=6000
+```
+
+### `client/.env`
+```env
+VITE_BACKEND_URL=http://localhost:6000
+VITE_FIREBASE_APIKEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
+VITE_RAZORPAY_KEY_ID=
+```
 
 ---
 
-### 15. Motion (Framer Motion)
-**Purpose:** UI animations and transitions  
-**Package:** `motion ^12.34.1`
+## Getting Started
+
+```bash
+# 1. Clone the repo
+git clone <repo-url>
+cd AIInterviewAgent
+
+# 2. Install server dependencies
+cd server && npm install
+
+# 3. Add server/.env (see above)
+
+# 4. Install client dependencies
+cd ../client && npm install
+
+# 5. Add client/.env (see above)
+
+# 6. Start the server  (from /server)
+npm run dev
+
+# 7. Start the client  (from /client)
+npm run dev
+```
+
+Frontend: `http://localhost:5173`
+Backend: `http://localhost:6000`
 
 ---
 
-### 16. Tailwind CSS
-**Purpose:** Utility-first CSS framework for all UI styling  
-**Packages:** `tailwindcss ^4.1.18`, `@tailwindcss/vite ^4.1.18`
-
----
-
-## Dev / Build Tools
-
-| Tool | Purpose | Package |
-|------|---------|---------|
-| **Vite** | Frontend build tool and dev server | `vite ^7.3.1` |
-| **Nodemon** | Auto-restart server on file changes | `nodemon ^3.1.11` |
-| **dotenv** | Load environment variables from `.env` files | `dotenv ^17.3.1` |
-
----
-
-## Service Flow Overview
+## Flow Overview
 
 ```
 Authentication:
-  Google Sign-In (Firebase) → Express API → MongoDB (user stored) → JWT cookie issued
+  Google Sign-In (Firebase) → Express → MongoDB → JWT cookie
 
-Interview Setup:
-  Resume PDF (Multer upload) → PDF.js (text extract) → OpenRouter AI (analyze) → MongoDB
+Interview:
+  Resume PDF (Multer) → pdf-parse → OpenRouter AI (questions)
+  → Web Speech API (read aloud) → Speech Recognition (capture)
+  → OpenRouter AI (evaluate) → MongoDB (save)
 
-Interview Session:
-  OpenRouter AI (generate question) → Web Speech API (read aloud) → Speech Recognition (capture answer)
-  → OpenRouter AI (evaluate answer) → MongoDB (save result)
+ATS Check:
+  Resume PDF → pdf-parse → OpenRouter AI (score vs JD) → Result UI
 
-Payments:
-  Razorpay Checkout (client) → Razorpay API (verify) → MongoDB (record) → User credits updated
+Payment:
+  Razorpay Checkout → Verify signature → MongoDB → Credits updated
 
 Reports:
-  MongoDB (fetch results) → Recharts (visualize) → jsPDF (export)
+  MongoDB → Recharts (visualize) → jsPDF (export)
 ```

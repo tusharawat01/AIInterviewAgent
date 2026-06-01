@@ -139,7 +139,12 @@ Question 3 → medium
 Question 4 → medium  
 Question 5 → hard  
 
-Make questions based on the candidate’s role, experience,interviewMode, projects, skills, and resume details.
+Make questions based on the candidate’s role, experience, interviewMode, projects, skills, and resume details.
+
+Interview Mode Guidelines:
+- Technical: focus on coding concepts, tools, frameworks, and practical problem-solving.
+- HR: focus on behavioral questions, teamwork, communication style, and career goals.
+- System Design: focus on designing scalable systems, databases, APIs, and architecture trade-offs.
 `,
       },
       {
@@ -189,6 +194,7 @@ Make questions based on the candidate’s role, experience,interviewMode, projec
       creditsLeft: user.credits,
       userName: user.name,
       questions: interview.questions,
+      mode: interview.mode,
     });
   } catch (error) {
     return res
@@ -217,18 +223,7 @@ export const submitAnswer = async (req, res) => {
       });
     }
 
-    // If time exceeded
-    if (timeTaken > question.timeLimit) {
-      question.score = 0;
-      question.feedback = "Time limit exceeded. Answer not evaluated.";
-      question.answer = answer;
-
-      await interview.save();
-
-      return res.json({
-        feedback: question.feedback,
-      });
-    }
+    const isLate = timeTaken > question.timeLimit;
 
     const messages = [
       {
@@ -286,6 +281,11 @@ Answer: ${answer}
     const aiResponse = await askAi(messages);
 
     const parsed = JSON.parse(aiResponse);
+
+    if (isLate) {
+      parsed.finalScore = Math.max(0, parsed.finalScore - 2);
+      parsed.feedback = parsed.feedback + " (Late submission: -2 penalty applied.)";
+    }
 
     question.answer = answer;
     question.confidence = parsed.confidence;

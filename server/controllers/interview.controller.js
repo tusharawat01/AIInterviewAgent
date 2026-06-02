@@ -1,4 +1,3 @@
-import fs from "fs";
 import pdfParse from "pdf-parse/lib/pdf-parse.js";
 import { askAi } from "../services/openRouter.service.js";
 import User from "../models/user.model.js";
@@ -9,10 +8,8 @@ export const analyzeResume = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ message: "Resume required" });
     }
-    const filepath = req.file.path;
 
-    const fileBuffer = await fs.promises.readFile(filepath);
-    const pdfData = await pdfParse(fileBuffer);
+    const pdfData = await pdfParse(req.file.buffer);
     const resumeText = pdfData.text.replace(/\s+/g, " ").trim();
 
     const messages = [
@@ -38,10 +35,7 @@ Return strictly JSON:
     ];
 
     const aiResponse = await askAi(messages);
-
     const parsed = JSON.parse(aiResponse);
-
-    fs.unlinkSync(filepath);
 
     res.json({
       role: parsed.role,
@@ -52,11 +46,6 @@ Return strictly JSON:
     });
   } catch (error) {
     console.error(error);
-
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
-
     return res.status(500).json({ message: error.message });
   }
 };

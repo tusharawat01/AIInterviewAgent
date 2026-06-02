@@ -1,4 +1,3 @@
-import fs from "fs"
 import pdfParse from "pdf-parse/lib/pdf-parse.js"
 import { askAi } from "../services/openRouter.service.js"
 import User from "../models/user.model.js"
@@ -12,26 +11,20 @@ export const checkAts = async (req, res) => {
     }
 
     if (!jobDescription || !jobDescription.trim()) {
-      fs.unlinkSync(req.file.path)
       return res.status(400).json({ message: "Job description is required." })
     }
 
     const user = await User.findById(req.userId)
     if (!user) {
-      fs.unlinkSync(req.file.path)
       return res.status(404).json({ message: "User not found." })
     }
 
     if (user.credits < 25) {
-      fs.unlinkSync(req.file.path)
       return res.status(400).json({ message: "Not enough credits. Minimum 25 required." })
     }
 
-    const fileBuffer = await fs.promises.readFile(req.file.path)
-    const pdfData = await pdfParse(fileBuffer)
+    const pdfData = await pdfParse(req.file.buffer)
     const resumeText = pdfData.text.replace(/\s+/g, " ").trim()
-
-    fs.unlinkSync(req.file.path)
 
     const messages = [
       {
@@ -88,9 +81,6 @@ ${resumeText}
     })
 
   } catch (error) {
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path)
-    }
     console.error(error)
     return res.status(500).json({ message: `ATS check failed: ${error.message}` })
   }
